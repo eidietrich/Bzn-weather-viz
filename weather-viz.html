@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.bar {
+  fill: grey;
+}
+
+.bar:hover {
+  fill: steelblue;
+  
+}
+
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+</style>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+    <script>
+
+    // script adapted from Mike Bostock examples
+    // Bar chart: http://bl.ocks.org/mbostock/3885304
+    // Line chart: http://bl.ocks.org/mbostock/3883245
+
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var svg = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x = d3.time.scale()
+        .range([0,width])
+
+    var y = d3.scale.linear()
+        .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
+
+
+    // portion of script that runs after data loads
+    d3.csv("bzn-weather-2014-clean.csv", function(d) {
+        return {
+            date: parseDate(d.DATE),
+            tMax: parseTemp(+d.TMAX),
+            tMin: parseTemp(+d.TMIN),
+            precip: +d.PRCP
+        };
+    }, function(error, data) {
+        if (error) throw error;
+
+        x.domain(d3.extent(data, function(d) { return d.date; }));
+        y.domain([
+            d3.min(data, function(d) { return d.tMin; }),
+            d3.max(data, function(d) { return d.tMax; })
+            ]);
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
+
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+
+        // Draw bars based on daily weather data
+        svg.selectAll(".bar")
+              .data(data)
+            .enter().append("rect")
+              .attr("class", "bar")
+              .attr("x", function(d) { return x(d.date); })
+              .attr("width", width / data.length)
+              .attr("y", function(d) { return y(d.tMax); })
+              .attr("height", function(d) { return y(d.tMin) - y(d.tMax); });
+
+    });
+
+    // date conversion from YYYYMMDD format to D3-readable
+    function parseDate(date) {
+        return d3.time.format('%Y%m%d').parse(date.toString());
+    }
+
+    // conversion for temp decimal degree C --> degree F
+    function parseTemp(temp) {
+        return (temp / 10) * 1.8 + 32;
+    }
+
+    </script>
+</body>
