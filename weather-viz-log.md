@@ -4,6 +4,12 @@ Goal: To create a weather chart for Bozeman modeled after the [2004 NY City weat
 
 Also want to add rainfall data by day (maybe compare to typical cumulative rainfall)
 
+## TODO
+
+- Use full 1895 dataset to calculate record/average min/max temperatures for particular days w/ python --> concat w/ relevant columns of complete data to produce final data table for import into D3 viz.
+- Continue developing D3 visualization
+- Figure out how to deal with precip values?
+
 ## Data needed 
 
 For each day:
