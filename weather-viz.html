@@ -2,17 +2,27 @@
 <meta charset="utf-8">
 <style>
 
-.bar {
-  fill: grey;
+.extreme {
+  fill: #fee8c8;
 }
 
-.bar:hover {
-  fill: steelblue;
-  
+.typical {
+  fill: #fdbb84;
+  opacity: 1.0;
+}
+
+.actual {
+  fill: #e34a33;
+  opacity: 0.7;
+
+}
+
+.actual:hover {
+    opacity: 1.0;
 }
 
 .axis {
-  font: 10px sans-serif;
+    font: 10px "Helvetica Neue", Helvetica, sans-serif;
 }
 
 .axis path,
@@ -61,20 +71,25 @@
 
 
     // portion of script that runs after data loads
-    d3.csv("bzn-weather-2014-clean.csv", function(d) {
+    // Column headers: DATE,PRCP,TMAX,TMIN,AVGHIGH,AVGLOW,RECHIGH,RECLOW
+    d3.csv("BZN-weather-data_2014.csv", function(d) {
         return {
             date: parseDate(d.DATE),
             tMax: parseTemp(+d.TMAX),
             tMin: parseTemp(+d.TMIN),
-            precip: +d.PRCP
+            //precip: +d.PRCP
+            avgHigh: parseTemp(+d.AVGHIGH),
+            avgLow: parseTemp(+d.AVGLOW),
+            recHigh: parseTemp(+d.RECHIGH),
+            recLow: parseTemp(+d.RECLOW)
         };
     }, function(error, data) {
         if (error) throw error;
 
         x.domain(d3.extent(data, function(d) { return d.date; }));
         y.domain([
-            d3.min(data, function(d) { return d.tMin; }),
-            d3.max(data, function(d) { return d.tMax; })
+            d3.min(data, function(d) { return d.recLow; }),
+            d3.max(data, function(d) { return d.recHigh; })
             ]);
 
         svg.append("g")
@@ -86,11 +101,31 @@
             .attr("class", "y axis")
             .call(yAxis)
 
+        //Draw extreme bars 
+        svg.selectAll(".bar")
+              .data(data)
+            .enter().append("rect")
+              .attr("class", "extreme")
+              .attr("x", function(d) { return x(d.date); })
+              .attr("width", width / data.length)
+              .attr("y", function(d) { return y(d.recHigh); })
+              .attr("height", function(d) { return y(d.recLow) - y(d.recHigh); });
+
+        //Draw typical bars
+        svg.selectAll(".bar")
+              .data(data)
+            .enter().append("rect")
+              .attr("class", "typical")
+              .attr("x", function(d) { return x(d.date); })
+              .attr("width", width / data.length)
+              .attr("y", function(d) { return y(d.avgHigh); })
+              .attr("height", function(d) { return y(d.avgLow) - y(d.avgHigh); });
+
         // Draw bars based on daily weather data
         svg.selectAll(".bar")
               .data(data)
             .enter().append("rect")
-              .attr("class", "bar")
+              .attr("class", "actual")
               .attr("x", function(d) { return x(d.date); })
               .attr("width", width / data.length)
               .attr("y", function(d) { return y(d.tMax); })
@@ -99,8 +134,13 @@
     });
 
     // date conversion from YYYYMMDD format to D3-readable
+    // function parseDate(date) {
+    //     return d3.time.format('%Y%m%d').parse(date.toString());
+    // }
+
+    // date conversion from YYYY-MM-DD
     function parseDate(date) {
-        return d3.time.format('%Y%m%d').parse(date.toString());
+        return d3.time.format('%Y-%m-%d').parse(date.toString());
     }
 
     // conversion for temp decimal degree C --> degree F

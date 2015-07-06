@@ -6,9 +6,9 @@ Also want to add rainfall data by day (maybe compare to typical cumulative rainf
 
 ## TODO
 
-- Use full 1895 dataset to calculate record/average min/max temperatures for particular days w/ python --> concat w/ relevant columns of complete data to produce final data table for import into D3 viz.
 - Continue developing D3 visualization
 - Figure out how to deal with precip values?
+- Figure out how to make overall viz responsive
 
 ## Data needed 
 
@@ -68,7 +68,5 @@ Used csvkit.csvcut to truncate data
 csvcut -c 6,7,10,11 BZN-weather-data_2014.csv > bzn-weather-2014-clean.csv
 https://csvkit.readthedocs.org/en/0.9.1/scripts/csvcut.html
 
-Started with Mike Bostock bar chart d3 example
-
-As of 6/4/15, had daily high/low for 2014 sketched out
+Using complete data - used weather-data-cleaner.ipynb to identify average and record highs and lows for each date, concatenate them with by-date data.
 
