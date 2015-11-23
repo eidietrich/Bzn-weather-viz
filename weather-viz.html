@@ -113,7 +113,7 @@
     // portion of script that runs after data loads
     // Column headers: 
     // DATE,PRCP,TMAX,TMIN,AVGHIGH,AVGLOW,RECHIGH,RECLOW
-    d3.csv("BZN-weather-data_2014.csv", function(d) {
+    d3.csv("BZN-weather_2013-01-01_2013-12-31.csv", function(d) {
         return {
             date: parseDate(d.DATE),
             tMax: parseTemp(+d.TMAX),
