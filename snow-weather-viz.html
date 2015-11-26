@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.extreme {
+  fill: #fee8c8;
+  opacity: 0.8;
+  display: none;
+}
+
+.typical {
+  fill: #fdbb84;
+  opacity: 0.8;
+
+}
+
+.actual {
+  fill: #e34a33;
+  opacity: 0.7;
+}
+
+.snow {
+  fill: #3182bd;
+  opacity: 0.8;
+}
+
+#freezing-point{
+  stroke:#3182bd;
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+  opacity: 0.75;
+}
+
+/*.actual:hover {
+    opacity: 1.0;
+}*/
+
+.axis {
+    font: 10px "Helvetica Neue", Helvetica, sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #666;
+  shape-rendering: crispEdges;
+}
+
+/*.x.axis path {
+  display: none;
+}*/
+
+.grid .tick {
+  stroke: lightgrey;
+  opacity: 0.7;
+  shape-rendering: crispEdges;
+}
+.grid path {
+  stroke-width: 0;
+}
+
+</style>
+<body>
+    <h1>Bozeman weather</h1>
+    <div id="chart"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+    <script>
+
+    // script adapted from Mike Bostock examples
+    // Bar chart: http://bl.ocks.org/mbostock/3885304
+    // Line chart: http://bl.ocks.org/mbostock/3883245
+    // Graph with many features: http://bl.ocks.org/d3noob/e1aa61856118edfa624d
+
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+        // width = '100%',
+        // height = '100%';
+
+    var svg = d3.select("#chart").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x = d3.time.scale()
+        .range([0,width])
+
+    var y = d3.scale.linear()
+        .range([height, 0]);
+
+    var snowScale = d3.scale.linear()
+        .range([height / 5, 0]);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
+
+    var snowAxis = d3.svg.axis()
+        .scale(snowScale)
+        .orient("left");
+
+    // Helper functions
+
+    // date conversion from YYYY-MM-DD
+    function parseDate(date) {
+        return d3.time.format('%Y-%m-%d').parse(date.toString());
+    }
+
+    // conversion for temp decimal degree C --> degree F
+    function parseTemp(temp) {
+        return (temp / 10) * 1.8 + 32;
+    }
+
+    // functions for x and y grid lines
+    function make_x_axis() {
+      return d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+    }
+    function make_y_axis() {
+      return d3.svg.axis()
+        .scale(x)
+        .orient("left");
+    }
+
+
+    // portion of script that runs after data loads
+    // Column headers: 
+    // DATE,PRCP,TMAX,TMIN,AVGHIGH,AVGLOW,RECHIGH,RECLOW
+    d3.csv("data-processed/BZN-weather_2013-08-01_2014-07-31.csv", function(d) {
+        return {
+            date: parseDate(d.DATE),
+            tMax: parseTemp(+d.TMAX),
+            tMin: parseTemp(+d.TMIN),
+            //precip: +d.PRCP
+            avgHigh: parseTemp(+d.AVGHIGH),
+            avgLow: parseTemp(+d.AVGLOW),
+            recHigh: parseTemp(+d.RECHIGH),
+            recLow: parseTemp(+d.RECLOW),
+            snwDep: +d.SNWDEP
+        };
+    }, function(error, data) {
+        if (error) throw error;
+
+        console.log(data);
+
+        // Scale data range
+        x.domain(d3.extent(data, function(d) { return d.date; }));
+        y.domain([
+            d3.min(data, function(d) { return d.recLow; }),
+            d3.max(data, function(d) { return d.recHigh; })
+            ]);
+
+        // Draw x grid lines
+        svg.append("g")
+          .attr("class", "grid")
+          .attr("transform", "translate(0," + height + ")")
+          .call(make_x_axis()
+            .tickSize(-height, 0, 0)
+            .tickFormat("")
+          );
+
+        // Draw y grid lines
+        // svg.append("g")
+        //   .attr("class", "grid")
+        //   .call(make_y_axis()
+        //     .tickSize(-width, 0, 0)
+        //     .tickFormat("")
+        //   );
+
+        // Draw extreme bars 
+        svg.append("g")
+          .selectAll(".bar")
+              .data(data)
+            .enter().append("rect")
+              .attr("class", "extreme")
+              .attr("x", function(d) { return x(d.date); })
+              .attr("width", width / data.length)
+              .attr("y", function(d) { return y(d.recHigh); })
+              .attr("height", function(d) { return y(d.recLow) - y(d.recHigh); });
+
+        // Draw typical bars
+        svg.append("g")
+          .selectAll(".bar")
+              .data(data)
+            .enter().append("rect")
+              .attr("class", "typical")
+              .attr("x", function(d) { return x(d.date); })
+              .attr("width", width / data.length)
+              .attr("y", function(d) { return y(d.avgHigh); })
+              .attr("height", function(d) { return y(d.avgLow) - y(d.avgHigh); });
+
+        // Draw bars based on daily weather data
+        svg.append("g")
+          .selectAll(".bar")
+              .data(data)
+            .enter().append("rect")
+              .attr("class", "actual")
+              .attr("x", function(d) { return x(d.date); })
+              .attr("width", width / data.length )
+              .attr("y", function(d) { return y(d.tMax); })
+              .attr("height", function(d) { return y(d.tMin) - y(d.tMax); });
+
+        // Add line at freezing point
+        svg.append("line")
+          .attr({
+            id: 'freezing-point',
+            x1: 0,
+            x2: width,
+            y1: y(32),
+            y2: y(32)
+          });
+
+        // Draw bars for snow depth data
+        svg.append("g")
+          .selectAll(".bar")
+            .data(data)
+            .enter().append("rect")
+            .attr("class","snow")
+            .attr("x", function(d) { return x(d.date); })
+            .attr("width", width / data.length )
+            .attr("y", function(d) { return height - d.snwDep * 2; })
+            .attr("height", function(d) { return d.snwDep * 2; });
+
+        // Draw x- and y-axis
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+
+    });
+
+    </script>
+</body>
