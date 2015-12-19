@@ -129,9 +129,80 @@
         .orient("left");
     }
 
+    function drawTemp(data) {
+      // Draw extreme bars
+      svg.append("g")
+        .selectAll(".bar")
+            .data(data)
+          .enter().append("rect")
+            .attr({
+              class: "extreme",
+              x: function(d) { return x(d.date); },
+              y: function(d) { return y(d.recHigh); },
+              width: width / data.length,
+              height: function(d) { return y(d.recLow) - y(d.recHigh); }
+            });
+
+      // Draw typical bars
+      svg.append("g")
+        .selectAll(".bar")
+            .data(data)
+          .enter().append("rect")
+            .attr({
+              class: "typical",
+              x: function(d) { return x(d.date); },
+              y: function(d) { return y(d.avgHigh); },
+              width: width / data.length,
+              height: function(d) { return y(d.avgLow) - y(d.avgHigh); }
+            });
+
+      // Draw bars based on daily weather data
+      svg.append("g")
+        .selectAll(".bar")
+            .data(data)
+          .enter().append("rect")
+            .attr({
+              class: "actual",
+              x: function(d) { return x(d.date); },
+              y: function(d) { return y(d.tMax); },
+              width: width / data.length,
+              height: function(d) { return y(d.tMin) - y(d.tMax); }
+            });
+
+      // Draw line at freezing point
+      svg.append("line")
+        .attr({
+          id: 'freezing-point',
+          x1: 0,
+          x2: width,
+          y1: y(32),
+          y2: y(32)
+        });
+
+      return null;
+    }
+
+    function drawSnow(data) {
+
+      // Draw bars for snow depth data
+      svg.append("g")
+        .selectAll(".bar")
+          .data(data)
+          .enter().append("rect")
+          .attr({
+            class: 'snow',
+            x: function(d) { return x(d.date); },
+            y: function(d) { return height - d.snwDep * 2; },
+            width: width / data.length,
+            height: function(d) { return d.snwDep * 2; }
+          });
+
+      return null;
+    }
+
 
     // portion of script that runs after data loads
-    // Column headers: 
+    // Column headers:
     // DATE,PRCP,TMAX,TMIN,AVGHIGH,AVGLOW,RECHIGH,RECLOW
     d3.csv("data-processed/BZN-weather_2013-08-01_2014-07-31.csv", function(d) {
         return {
@@ -174,59 +245,9 @@
         //     .tickFormat("")
         //   );
 
-        // Draw extreme bars 
-        svg.append("g")
-          .selectAll(".bar")
-              .data(data)
-            .enter().append("rect")
-              .attr("class", "extreme")
-              .attr("x", function(d) { return x(d.date); })
-              .attr("width", width / data.length)
-              .attr("y", function(d) { return y(d.recHigh); })
-              .attr("height", function(d) { return y(d.recLow) - y(d.recHigh); });
+        drawSnow(data);
+        drawTemp(data);
 
-        // Draw typical bars
-        svg.append("g")
-          .selectAll(".bar")
-              .data(data)
-            .enter().append("rect")
-              .attr("class", "typical")
-              .attr("x", function(d) { return x(d.date); })
-              .attr("width", width / data.length)
-              .attr("y", function(d) { return y(d.avgHigh); })
-              .attr("height", function(d) { return y(d.avgLow) - y(d.avgHigh); });
-
-        // Draw bars based on daily weather data
-        svg.append("g")
-          .selectAll(".bar")
-              .data(data)
-            .enter().append("rect")
-              .attr("class", "actual")
-              .attr("x", function(d) { return x(d.date); })
-              .attr("width", width / data.length )
-              .attr("y", function(d) { return y(d.tMax); })
-              .attr("height", function(d) { return y(d.tMin) - y(d.tMax); });
-
-        // Add line at freezing point
-        svg.append("line")
-          .attr({
-            id: 'freezing-point',
-            x1: 0,
-            x2: width,
-            y1: y(32),
-            y2: y(32)
-          });
-
-        // Draw bars for snow depth data
-        svg.append("g")
-          .selectAll(".bar")
-            .data(data)
-            .enter().append("rect")
-            .attr("class","snow")
-            .attr("x", function(d) { return x(d.date); })
-            .attr("width", width / data.length )
-            .attr("y", function(d) { return height - d.snwDep * 2; })
-            .attr("height", function(d) { return d.snwDep * 2; });
 
         // Draw x- and y-axis
         svg.append("g")
