@@ -61,7 +61,7 @@
 
 </style>
 <body>
-    <h1>Bozeman weather</h1>
+    <h1>Bozeman temperatures; Bridger snowfall</h1>
     <div id="chart"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
@@ -72,37 +72,44 @@
     // Line chart: http://bl.ocks.org/mbostock/3883245
     // Graph with many features: http://bl.ocks.org/d3noob/e1aa61856118edfa624d
 
+    // Date range
+    var startDate = '2013-09-01',
+      endDate = '2014-05-31';
+
+    // Dimensions
     var margin = {top: 20, right: 20, bottom: 30, left: 40},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
-        // width = '100%',
-        // height = '100%';
+      containerWidth = 960,
+      tempHeight = 500,
+      snowHeight = 200,
+      innerWidth = containerWidth - margin.left - margin.right,
+      innerHeight = tempHeight + snowHeight,
+      containerHeight = innerHeight + margin.top + margin.bottom;
 
+    // Create chart svg
     var svg = d3.select("#chart").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      .attr("width", containerWidth)
+      .attr("height", containerHeight)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+
+    // Create scales, including dual y-scales for Temp and Snow panels
     var x = d3.time.scale()
-        .range([0,width])
+        .range([0,innerWidth])
+    var yTemp = d3.scale.linear()
+        .range([tempHeight, 0]);
+    var ySnow = d3.scale.linear()
+        .range([snowHeight, 0]);
 
-    var y = d3.scale.linear()
-        .range([height, 0]);
-
-    var snowScale = d3.scale.linear()
-        .range([height / 5, 0]);
-
+    // Create axis objects
     var xAxis = d3.svg.axis()
         .scale(x)
-        .orient("bottom");
-
-    var yAxis = d3.svg.axis()
-        .scale(y)
+        .orient("top");
+    var yAxisTemp = d3.svg.axis()
+        .scale(yTemp)
         .orient("left");
-
-    var snowAxis = d3.svg.axis()
-        .scale(snowScale)
+    var yAxisSnow = d3.svg.axis()
+        .scale(ySnow)
         .orient("left");
 
     // Helper functions
@@ -123,50 +130,63 @@
         .scale(x)
         .orient("bottom");
     }
-    function make_y_axis() {
-      return d3.svg.axis()
-        .scale(x)
-        .orient("left");
+    // function make_y_axis() {
+    //   return d3.svg.axis()
+    //     .scale(y)
+    //     .orient("left");
+    // }
+
+    function filterData(data, startDate, endDate) {
+      // TODO - return data corresponding to desired date range
+      console.log(startDate);
+      console.log(endDate);
+      return data.filter(function(d){ return (d.date >= startDate) && (d.date <= endDate); });
+      // return data;
     }
 
     function drawTemp(data) {
+
+      // Create container group
+      var tempGroup = svg.append("g")
+        .attr("id","temp-group");
+
       // Draw extreme bars
-      svg.append("g")
+      tempGroup.append("g")
         .selectAll(".bar")
             .data(data)
           .enter().append("rect")
             .attr({
               class: "extreme",
               x: function(d) { return x(d.date); },
-              y: function(d) { return y(d.recHigh); },
-              width: width / data.length,
-              height: function(d) { return y(d.recLow) - y(d.recHigh); }
+              y: function(d) { return yTemp(d.recHigh); },
+              width: innerWidth / data.length,
+              height: function(d) { return yTemp(d.recLow) - yTemp(d.recHigh); }
             });
 
       // Draw typical bars
-      svg.append("g")
+      tempGroup.append("g")
         .selectAll(".bar")
             .data(data)
           .enter().append("rect")
             .attr({
               class: "typical",
               x: function(d) { return x(d.date); },
-              y: function(d) { return y(d.avgHigh); },
-              width: width / data.length,
-              height: function(d) { return y(d.avgLow) - y(d.avgHigh); }
+              y: function(d) { return yTemp(d.avgHigh); },
+              width: innerWidth / data.length,
+              height: function(d) { return yTemp(d.avgLow) - yTemp(d.avgHigh); }
             });
 
       // Draw bars based on daily weather data
-      svg.append("g")
+      tempGroup.append("g")
         .selectAll(".bar")
             .data(data)
           .enter().append("rect")
             .attr({
               class: "actual",
               x: function(d) { return x(d.date); },
-              y: function(d) { return y(d.tMax); },
-              width: width / data.length,
-              height: function(d) { return y(d.tMin) - y(d.tMax); }
+              y: function(d) { return yTemp(d.tMax); },
+              width: innerWidth / data.length,
+              height: function(d) { return yTemp(d.tMin) - yTemp(d.tMax); }
             });
 
       // Draw line at freezing point
@@ -174,28 +194,43 @@
         .attr({
           id: 'freezing-point',
           x1: 0,
-          x2: width,
-          y1: y(32),
-          y2: y(32)
+          x2: innerWidth,
+          y1: yTemp(32),
+          y2: yTemp(32)
         });
+
+      // Draw y-axis
+      svg.append("g")
+          .attr("class", "y axis temp")
+          .call(yAxisTemp);
 
       return null;
     }
 
     function drawSnow(data) {
 
-      // Draw bars for snow depth data
-      svg.append("g")
+      // Create container group for snow depth bars
+      var snowGroup = svg.append("g")
+      .attr("id", "snow-group")
+      .attr("transform", "translate(0, " + tempHeight + ")");
+
+      // Draw bars for snow depth
+      snowGroup.append("g")
         .selectAll(".bar")
           .data(data)
           .enter().append("rect")
           .attr({
             class: 'snow',
             x: function(d) { return x(d.date); },
-            y: function(d) { return height - d.snwDep * 2; },
-            width: width / data.length,
+            y: function(d) { return snowHeight - d.snwDep * 2; },
+            width: innerWidth / data.length,
             height: function(d) { return d.snwDep * 2; }
           });
+
+      snowGroup.append("g")
+          .attr("class", "y axis")
+          // .attr("transform", "translate(0," + tempHeight + ")")
+          .call(yAxisSnow);
 
       return null;
     }
@@ -216,47 +251,39 @@
             recLow: parseTemp(+d.RECLOW),
             snwDep: +d.SNWDEP
         };
-    }, function(error, data) {
+    }, function(error, dataFull) {
         if (error) throw error;
 
+        // Filter data to desired date range
+        data = filterData(dataFull, parseDate(startDate), parseDate(endDate));
         console.log(data);
 
-        // Scale data range
+        // Scale data ranges
         x.domain(d3.extent(data, function(d) { return d.date; }));
-        y.domain([
-            d3.min(data, function(d) { return d.recLow; }),
-            d3.max(data, function(d) { return d.recHigh; })
-            ]);
+        yTemp.domain([
+          d3.min(data, function(d) { return d.recLow; }),
+          d3.max(data, function(d) { return d.recHigh; })
+        ]);
+        ySnow.domain([0, d3.max(data, function(d) { return d.snwDep; })]);
 
         // Draw x grid lines
         svg.append("g")
           .attr("class", "grid")
-          .attr("transform", "translate(0," + height + ")")
+          .attr("transform", "translate(0," + innerHeight + ")")
           .call(make_x_axis()
-            .tickSize(-height, 0, 0)
+            .tickSize(-innerHeight, 0, 0)
             .tickFormat("")
           );
 
-        // Draw y grid lines
-        // svg.append("g")
-        //   .attr("class", "grid")
-        //   .call(make_y_axis()
-        //     .tickSize(-width, 0, 0)
-        //     .tickFormat("")
-        //   );
-
+        // Call drawing functions
         drawSnow(data);
         drawTemp(data);
 
-
-        // Draw x- and y-axis
+        // Draw x-axis
         svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis);
-        svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
+          .attr("class", "x axis")
+          // .attr("transform", "translate(0," + tempHeight + ")")
+          .call(xAxis);
 
     });
 
