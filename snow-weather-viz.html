@@ -92,7 +92,6 @@
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-
     // Create scales, including dual y-scales for Temp and Snow panels
     var x = d3.time.scale()
         .range([0,innerWidth])
@@ -112,40 +111,48 @@
         .scale(ySnow)
         .orient("left");
 
-    // Helper functions
-
     // date conversion from YYYY-MM-DD
     function parseDate(date) {
         return d3.time.format('%Y-%m-%d').parse(date.toString());
     }
 
-    // conversion for temp decimal degree C --> degree F
+    // temperature conversion for decimal degree C --> degree F
     function parseTemp(temp) {
         return (temp / 10) * 1.8 + 32;
     }
 
-    // functions for x and y grid lines
+    // make x grid lines
     function make_x_axis() {
       return d3.svg.axis()
         .scale(x)
         .orient("bottom");
     }
-    // function make_y_axis() {
-    //   return d3.svg.axis()
-    //     .scale(y)
-    //     .orient("left");
-    // }
 
     function filterData(data, startDate, endDate) {
-      // TODO - return data corresponding to desired date range
-      console.log(startDate);
-      console.log(endDate);
       return data.filter(function(d){ return (d.date >= startDate) && (d.date <= endDate); });
-      // return data;
+    }
+
+    // Drawing functions
+
+    function drawGrid() {
+      // Draw x grid lines
+      svg.append("g")
+        .attr("class", "grid")
+        .attr("transform", "translate(0," + innerHeight + ")")
+        .call(make_x_axis()
+          .tickSize(-innerHeight, 0, 0)
+          .tickFormat("")
+        );
+    }
+
+    function drawXAxis(){
+      svg.append("g")
+          .attr("class", "x axis")
+          // .attr("transform", "translate(0," + tempHeight + ")")
+          .call(xAxis);
     }
 
     function drawTemp(data) {
-
       // Create container group
       var tempGroup = svg.append("g")
         .attr("id","temp-group");
@@ -208,7 +215,6 @@
     }
 
     function drawSnow(data) {
-
       // Create container group for snow depth bars
       var snowGroup = svg.append("g")
       .attr("id", "snow-group")
@@ -227,6 +233,7 @@
             height: function(d) { return d.snwDep * 2; }
           });
 
+      // Draw y-axis
       snowGroup.append("g")
           .attr("class", "y axis")
           // .attr("transform", "translate(0," + tempHeight + ")")
@@ -234,7 +241,6 @@
 
       return null;
     }
-
 
     // portion of script that runs after data loads
     // Column headers:
@@ -256,7 +262,6 @@
 
         // Filter data to desired date range
         data = filterData(dataFull, parseDate(startDate), parseDate(endDate));
-        console.log(data);
 
         // Scale data ranges
         x.domain(d3.extent(data, function(d) { return d.date; }));
@@ -266,24 +271,12 @@
         ]);
         ySnow.domain([0, d3.max(data, function(d) { return d.snwDep; })]);
 
-        // Draw x grid lines
-        svg.append("g")
-          .attr("class", "grid")
-          .attr("transform", "translate(0," + innerHeight + ")")
-          .call(make_x_axis()
-            .tickSize(-innerHeight, 0, 0)
-            .tickFormat("")
-          );
-
         // Call drawing functions
+        drawGrid();
         drawSnow(data);
         drawTemp(data);
+        drawXAxis();
 
-        // Draw x-axis
-        svg.append("g")
-          .attr("class", "x axis")
-          // .attr("transform", "translate(0," + tempHeight + ")")
-          .call(xAxis);
 
     });
 
